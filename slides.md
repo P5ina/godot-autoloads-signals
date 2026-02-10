@@ -1,9 +1,9 @@
 ---
 theme: default
-title: "Godot Deep Dive: Autoloads & Signals"
+title: "Погружение в Godot: Autoloads и Signals"
 info: |
-  A practical guide to two essential Godot patterns:
-  Autoloads (singletons) and Signals (observer pattern).
+  Практическое руководство по двум ключевым паттернам Godot:
+  Autoloads (синглтоны) и Signals (паттерн наблюдатель).
   AUCA Gamedev Club 2026.
 transition: slide-left
 mdc: true
@@ -12,8 +12,8 @@ drawings:
   persist: false
 ---
 
-# Godot Deep Dive
-## Autoloads & Signals
+# Погружение в Godot
+## Autoloads и Signals
 
 <div class="pt-12">
   <span class="text-xl text-gray-400">
@@ -28,7 +28,88 @@ drawings:
 </div>
 
 <!--
-Welcome everyone! Today we'll cover two fundamental patterns that will level up your Godot projects.
+Всем привет! Сегодня разберём два фундаментальных паттерна, которые прокачают ваши проекты на Godot.
+-->
+
+---
+
+# Почему Godot?
+
+<div class="grid grid-cols-2 gap-6 mt-2">
+<div>
+
+### Unity
+
+- 🏢 Корпоративный, закрытый код
+- 💰 Платный на определённом уровне дохода
+- ⚙️ Компонентная архитектура (GameObject + Component)
+- 🔤 C# / (бывший) UnityScript
+- 📦 Тяжёлый — гигабайты на установку
+- 🎮 Сильный в 3D, хорош в 2D
+
+</div>
+<div>
+
+### Godot
+
+- 🌍 Open source, MIT лицензия
+- 🆓 Полностью бесплатный навсегда
+- 🌳 Нодовая архитектура (Node + Scene)
+- 🔤 GDScript / C# / GDExtension (C++)
+- 🪶 Лёгкий — ~50 МБ, один бинарник
+- 🎮 Отличный в 2D, растущий в 3D
+
+</div>
+</div>
+
+<!--
+Краткое сравнение для контекста. У обоих движков свои сильные стороны, но Godot выделяется доступностью и простотой.
+-->
+
+---
+
+# Архитектура: Unity vs Godot
+
+<div class="grid grid-cols-2 gap-6 mt-4">
+<div>
+
+### Unity: GameObject + Component
+
+```
+Player (GameObject)
+├── Transform
+├── SpriteRenderer
+├── Rigidbody2D
+├── PlayerController.cs
+└── HealthSystem.cs
+```
+
+Нода сама по себе **пустая** — поведение через компоненты
+
+</div>
+<div>
+
+### Godot: Node + Scene
+
+```
+Player (CharacterBody2D)
+├── Sprite2D
+├── CollisionShape2D
+├── AnimationPlayer
+└── HealthBar (сцена-в-сцене)
+```
+
+Каждая нода уже **имеет назначение** — композиция через вложенность
+
+</div>
+</div>
+
+<div v-click class="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-center">
+  💡 В Godot <strong>всё является нодой</strong> — и это ключ к пониманию Autoloads и Signals
+</div>
+
+<!--
+Главное отличие: Unity строит поведение из компонентов, Godot — из дерева нод. Оба подхода рабочие, но нодовая система Godot делает autoloads и signals очень естественными.
 -->
 
 ---
@@ -36,46 +117,46 @@ transition: fade
 layout: center
 ---
 
-# Part 1: Autoloads
+# Часть 1: Autoloads
 
 <div class="text-2xl text-gray-400">
-  Global singletons that persist across scenes
+  Глобальные синглтоны, которые живут между сценами
 </div>
 
 ---
 
-# 🤔 The Problem
+# 🤔 Проблема
 
-Imagine you have a **score** variable in your game.
+Представьте: у вас есть переменная **score** в игре.
 
 <v-clicks>
 
-- Player collects a coin → score increases ✅
-- Player moves to the **next level** (scene change) → score resets to 0 ❌
-- You need score to **survive scene transitions**
+- Игрок собирает монетку → очки растут ✅
+- Игрок переходит на **следующий уровень** (смена сцены) → очки сбрасываются в 0 ❌
+- Нужно чтобы очки **пережили смену сцены**
 
 </v-clicks>
 
 <div v-click class="mt-8 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
-  <strong>Scene changes destroy all nodes.</strong> Your score variable dies with them.
+  <strong>Смена сцены уничтожает все ноды.</strong> Ваша переменная умирает вместе с ними.
 </div>
 
 <!--
-This is the core problem. When you change scenes, everything gets freed. Let's see how autoloads solve this.
+Это главная проблема. При смене сцены всё освобождается. Давайте посмотрим, как autoloads это решают.
 -->
 
 ---
 
-# What is an Autoload?
+# Что такое Autoload?
 
-A script (or scene) that Godot **loads automatically** when the game starts.
+Скрипт (или сцена), который Godot **загружает автоматически** при старте игры.
 
 <v-clicks>
 
-- 🌍 **Global** — accessible from anywhere via its name
-- 🔄 **Persistent** — survives scene changes
-- 1️⃣ **Singleton** — only one instance exists
-- 📦 **Always loaded** — sits above the scene tree
+- 🌍 **Глобальный** — доступен из любого места по имени
+- 🔄 **Персистентный** — переживает смену сцен
+- 1️⃣ **Синглтон** — существует только один экземпляр
+- 📦 **Всегда загружен** — находится над деревом сцен
 
 </v-clicks>
 
@@ -83,9 +164,9 @@ A script (or scene) that Godot **loads automatically** when the game starts.
 
 ```
 Root
-├── GameManager    ← autoload (always here)
-├── AudioManager   ← autoload (always here)
-└── CurrentScene   ← gets replaced on scene change
+├── GameManager    ← autoload (всегда здесь)
+├── AudioManager   ← autoload (всегда здесь)
+└── CurrentScene   ← заменяется при смене сцены
     ├── Player
     └── Enemy
 ```
@@ -93,14 +174,49 @@ Root
 </div>
 
 <!--
-Think of autoloads as the "skeleton" of your game that never changes, while scenes are the "clothes" that get swapped.
+Думайте об autoloads как о «скелете» игры, который никогда не меняется, а сцены — это «одежда», которую можно менять.
 -->
 
 ---
 
-# Setting Up an Autoload
+# Скрипт vs Сцена Autoload
 
-## Step 1: Create the script
+<div class="grid grid-cols-2 gap-6 mt-4">
+<div v-click class="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+
+### 📝 Script (.gd)
+
+- Только код, без нод
+- Легче, проще
+- Для: состояния, данных, утилит
+- `GameManager`, `SaveManager`
+
+</div>
+<div v-click class="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+
+### 🎬 Scene (.tscn)
+
+- Полное дерево нод + скрипт
+- Может содержать UI, Timer, AudioStreamPlayer...
+- Для: всего, что требует дочерние ноды
+- `SceneTransition` (с ColorRect), `AudioManager` (с AudioStreamPlayer)
+
+</div>
+</div>
+
+<div v-click class="mt-6 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-center">
+  💡 Начинай со скрипта — переделать в сцену можно в любой момент
+</div>
+
+<!--
+Правило простое: если автолоаду не нужны дочерние ноды — делай скриптом. Понадобились ноды — оборачивай в сцену.
+-->
+
+---
+
+# Настройка Autoload
+
+## Шаг 1: Создаём скрипт
 
 ```gdscript
 # game_manager.gd
@@ -113,7 +229,7 @@ var current_level: int = 1
 
 <v-click>
 
-## Step 2: Register it
+## Шаг 2: Регистрируем
 
 **Project → Project Settings → Autoload**
 
@@ -124,41 +240,43 @@ var current_level: int = 1
 </v-click>
 
 <!--
-Two simple steps. Create a script, register it. That's it. Godot handles the rest.
+Два простых шага. Создаём скрипт, регистрируем. Всё. Godot сделает остальное.
 -->
 
 ---
 
-# Using Autoloads
+# Использование Autoloads
 
-Now you can access `GameManager` from **any script** in your project:
+Теперь `GameManager` доступен из **любого скрипта** в проекте:
 
-```gdscript {1-3|5-7|9-12|all}
-# In coin.gd
+```gdscript {1-5|5-7|9-12|all}
+# В coin.gd
+extends Area2D
+
 func _on_collected():
     GameManager.score += 10
 
-# In enemy.gd
+# В enemy.gd
 func _on_killed():
     GameManager.score += 50
 
-# In ui.gd
+# В ui.gd
 func _process(_delta):
     $ScoreLabel.text = "Score: %d" % GameManager.score
     $LevelLabel.text = "Level: %d" % GameManager.current_level
 ```
 
 <div v-click class="mt-4 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-  💡 No need for <code>get_node()</code> or exports — just use the autoload name directly!
+  💡 Не нужен <code>get_node()</code> или export — просто используйте имя autoload напрямую!
 </div>
 
 <!--
-Click through to see different scripts all accessing the same GameManager. Notice how clean this is — no references to manage.
+Пролистайте, чтобы увидеть, как разные скрипты обращаются к одному GameManager. Обратите внимание, как чисто это выглядит — никаких ссылок.
 -->
 
 ---
 
-# Practical Autoload Examples
+# Примеры Autoloads на практике
 
 <div class="grid grid-cols-2 gap-6">
 <div v-click>
@@ -187,22 +305,17 @@ func play_sfx(sound: AudioStream):
 
 ```gdscript
 extends Node
-
 const PATH = "user://save.dat"
 
 func save_game():
-    var f = FileAccess.open(
-        PATH, FileAccess.WRITE)
-    f.store_var({
-        "score": GameManager.score,
-        "level": GameManager.current_level
-    })
+    var f = FileAccess.open(PATH, FileAccess.WRITE)
+    f.store_var({"score": GameManager.score,
+        "level": GameManager.current_level})
 
 func load_game():
     if not FileAccess.file_exists(PATH):
         return
-    var f = FileAccess.open(
-        PATH, FileAccess.READ)
+    var f = FileAccess.open(PATH, FileAccess.READ)
     var d = f.get_var()
     GameManager.score = d.score
     GameManager.current_level = d.level
@@ -211,28 +324,32 @@ func load_game():
 </div>
 </div>
 
+<style>
+.slidev-code { font-size: 0.82em !important; line-height: 1.35 !important; }
+</style>
+
 <!--
-Two super common autoloads. AudioManager for playing sounds from anywhere, SaveManager for persistence.
+Два самых частых autoload. AudioManager для воспроизведения звуков откуда угодно, SaveManager для сохранений.
 -->
 
 ---
 
-# ⚠️ Autoload Best Practices
+# ⚠️ Лучшие практики Autoloads
 
 <v-clicks>
 
-- **Keep them focused** — one responsibility per autoload
-- **Don't put everything there** — only truly global state
-- **Use signals** for communication (we'll cover this next!)
-- **Avoid circular dependencies** — autoloads shouldn't depend on scene nodes
+- **Один autoload — одна задача** — не мешайте ответственности
+- **Не тащите всё в autoload** — только действительно глобальное состояние
+- **Используйте сигналы** для общения (об этом дальше!)
+- **Избегайте циклических зависимостей** — autoloads не должны зависеть от нод сцены
 
 </v-clicks>
 
 <div v-click class="mt-8 grid grid-cols-2 gap-4">
 <div class="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
 
-### ✅ Good autoloads
-- GameManager (score, lives)
+### ✅ Хорошие autoloads
+- GameManager (очки, жизни)
 - AudioManager
 - SaveManager
 - SceneTransition
@@ -240,17 +357,17 @@ Two super common autoloads. AudioManager for playing sounds from anywhere, SaveM
 </div>
 <div class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
 
-### ❌ Bad autoloads
-- Player (scene-specific)
-- EnemySpawner (scene-specific)
-- UIController (changes per scene)
-- "GodObject" (does everything)
+### ❌ Плохие autoloads
+- Player (привязан к сцене)
+- EnemySpawner (привязан к сцене)
+- UIController (меняется от сцены к сцене)
+- "GodObject" (делает всё)
 
 </div>
 </div>
 
 <!--
-The key rule: if it needs to exist across scenes, it's an autoload. If it belongs to a specific scene, it's not.
+Ключевое правило: если что-то должно существовать между сценами — это autoload. Если принадлежит конкретной сцене — нет.
 -->
 
 ---
@@ -258,101 +375,98 @@ transition: fade
 layout: center
 ---
 
-# Part 2: Signals
+# Часть 2: Signals
 
 <div class="text-2xl text-gray-400">
-  The Observer pattern, Godot-style
+  Паттерн наблюдатель в стиле Godot
 </div>
 
 ---
 
-# 🤔 The Problem (Again)
+# 🤔 Проблема (снова)
 
-Your **Player** takes damage. Who needs to know?
+Ваш **Player** получает урон. Кому нужно знать?
 
 <v-clicks>
 
-- 💊 **HealthBar** — update the display
-- 🎵 **AudioManager** — play hurt sound
-- 📸 **Camera** — screen shake
-- 🎮 **GameManager** — check if player died
-- 😈 **Enemy** — celebrate?
+- 💊 **HealthBar** — обновить отображение
+- 🎵 **AudioManager** — проиграть звук удара
+- 📸 **Camera** — тряска экрана
+- 🎮 **GameManager** — проверить, жив ли игрок
+- 😈 **Enemy** — порадоваться?
 
 </v-clicks>
 
-<div v-click class="mt-6 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+<div v-click class="mt-4 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
 
 ```gdscript
-# ❌ Without signals: Player knows about EVERYONE
+# ❌ Без сигналов: Player знает обо ВСЕХ
 func take_damage(amount):
     health -= amount
-    $"../HealthBar".update(health)          # tight coupling!
-    $"../AudioManager".play("hurt")         # what if path changes?
-    $"../Camera".shake(0.5)                 # what if Camera doesn't exist?
-    GameManager.check_death(health)         # getting messy...
+    $"../HealthBar".update(health)       # жёсткая связь!
+    $"../AudioManager".play("hurt")      # а если путь изменится?
+    $"../Camera".shake(0.5)              # а если Camera не существует?
+    GameManager.check_death(health)      # каша...
 ```
 
 </div>
 
 <!--
-This is spaghetti code. The Player shouldn't need to know about every system that cares about damage. Enter: signals.
+Это спагетти-код. Player не должен знать о каждой системе, которой важен урон. На помощь: сигналы.
 -->
 
 ---
 
-# What is a Signal?
+# Что такое Signal?
 
-A way for nodes to **emit events** without knowing who's listening.
+Способ для нод **отправлять события**, не зная, кто слушает.
 
 <div class="mt-4">
 
 ```
-Player says: "Hey, I took damage!"
+Player говорит: "Эй, мне нанесли урон!"
 
-              ╭──→ HealthBar: "Got it, updating display"
+              ╭──→ HealthBar: "Понял, обновляю отображение"
               │
-Player ──emit─┼──→ AudioManager: "Playing hurt sound"
+Player ──emit─┼──→ AudioManager: "Проигрываю звук удара"
               │
-              ├──→ Camera: "Shaking screen"
+              ├──→ Camera: "Трясу экран"
               │
-              ╰──→ GameManager: "Checking if dead"
+              ╰──→ GameManager: "Проверяю, жив ли"
 ```
 
 </div>
 
 <v-clicks>
 
-- **Emitter** doesn't know (or care) who's listening
-- **Listeners** connect to signals they're interested in
-- Adding/removing listeners doesn't change the emitter
-- **Decoupled** — nodes are independent
+- **Отправитель** не знает (и ему всё равно), кто слушает
+- **Слушатели** подключаются к интересующим сигналам
+- Добавление/удаление слушателей не меняет отправителя
+- **Развязка** — ноды независимы друг от друга
 
 </v-clicks>
 
 <!--
-The Player just broadcasts "damage happened". Anyone interested can listen. The Player doesn't need to change when we add new listeners.
+Player просто транслирует "получен урон". Любой заинтересованный может слушать. Player не нужно менять при добавлении новых слушателей.
 -->
 
 ---
 
-# Defining Signals
+# Объявление сигналов
 
 ```gdscript {1-2|4-5|7-8|all}
-# Simple signal — no data
-signal died
+signal died                        # без данных
 
-# Signal with parameters
 signal health_changed(new_health: int, max_health: int)
 
-# Signal with complex data
 signal item_collected(item_name: String, item_value: int)
 ```
 
 <v-click>
 
-## Emitting Signals
+## Отправка сигналов
 
-```gdscript {1-8|all}
+```gdscript
 # player.gd
 var health: int = 100
 var max_health: int = 100
@@ -367,64 +481,88 @@ func take_damage(amount: int):
 </v-click>
 
 <!--
-Defining signals is just one line. Emitting is calling .emit() with the right arguments. Simple.
+Объявление сигнала — одна строка. Отправка — вызов .emit() с нужными аргументами. Просто.
 -->
 
 ---
 
-# Connecting Signals
+# Подключение сигналов
 
-### Method 1: In code (recommended)
+### Способ 1: В коде
 
-```gdscript {1-5|7-11|all}
+```gdscript {1-4|6-9|all}
 # health_bar.gd
 func _ready():
-    # Find the player and connect to its signal
     var player = get_node("../Player")
     player.health_changed.connect(_on_health_changed)
 
 func _on_health_changed(new_health: int, max_health: int):
-    # Update the health bar
     value = float(new_health) / float(max_health) * 100
     if new_health < max_health * 0.25:
-        modulate = Color.RED  # flash red when low
+        modulate = Color.RED  # мигаем красным при низком HP
 ```
 
 <v-click>
 
-### Method 2: In the Editor
+### Способ 2: В редакторе (я рекомендую)
 
-1. Select the **Player** node
-2. Go to **Node** tab → **Signals**
-3. Double-click `health_changed`
-4. Pick the target node & method
+1. Выбираем ноду **Player** → вкладка **Node** → **Signals**
+2. Двойной клик по `health_changed` → выбираем целевую ноду и метод
 
 </v-click>
 
 <!--
-Two ways to connect. Code is more flexible, editor is more visual. I recommend code for anything dynamic.
+Два способа подключения. Код более гибкий, редактор более наглядный. Рекомендую код для всего динамического.
 -->
 
 ---
 
-# Built-in Signals
+# `await` + Signals
 
-Godot nodes come with **tons** of useful signals:
+Godot 4 позволяет **приостановить функцию** до срабатывания сигнала:
+
+```gdscript
+# Ждём таймер
+await get_tree().create_timer(2.0).timeout
+print("Прошло 2 секунды!")
+
+# Ждём завершения анимации
+$AnimationPlayer.play("attack")
+await $AnimationPlayer.animation_finished
+
+# Ждём кастомный сигнал
+var result = await GameManager.level_completed
+print("Уровень пройден: ", result)
+```
+
+<v-click>
+
+<div class="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+  💡 <code>await</code> превращает асинхронный код в читаемые последовательные шаги — без колбэков!
+</div>
+
+</v-click>
+
+<!--
+await — одна из лучших фич GDScript. Делает асинхронный код похожим на синхронный. Супер полезно для катсцен, диалогов и последовательной игровой логики.
+-->
+
+---
+
+# Встроенные сигналы
+
+В нодах Godot **куча** полезных сигналов из коробки:
 
 <div class="grid grid-cols-2 gap-4 mt-4">
 <div>
 
-### Common Node Signals
+### Сигналы нод
 
 ```gdscript
 # Node
-ready
-tree_entered
-tree_exiting
-
+ready / tree_entered / tree_exiting
 # Timer
 timeout
-
 # Area2D
 body_entered(body)
 body_exited(body)
@@ -434,42 +572,38 @@ area_entered(area)
 </div>
 <div>
 
-### UI Signals
+### Сигналы UI
 
 ```gdscript
 # Button
 pressed
-
 # LineEdit
 text_changed(new_text)
 text_submitted(text)
-
 # AnimationPlayer
 animation_finished(anim_name)
-
 # HTTPRequest
-request_completed(result, code,
-    headers, body)
+request_completed(result, code, headers, body)
 ```
 
 </div>
 </div>
 
 <div v-click class="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-  💡 <strong>Tip:</strong> Always check the <strong>Node → Signals</strong> tab in the editor to see available signals!
+  💡 <strong>Совет:</strong> Всегда проверяйте вкладку <strong>Node → Signals</strong> в редакторе, чтобы увидеть доступные сигналы!
 </div>
 
 <!--
-You don't always need custom signals. Godot's built-in ones cover most use cases.
+Не всегда нужны кастомные сигналы. Встроенные покрывают большинство случаев.
 -->
 
 ---
 
 # Signals + Autoloads = 🔥
 
-The **real power** comes from combining both patterns:
+**Настоящая сила**: autoload с сигналами = глобальная шина событий
 
-```gdscript {1-7|9-15|17-23|all}
+```gdscript
 # game_manager.gd (autoload)
 signal game_over
 signal score_changed(new_score: int)
@@ -479,12 +613,29 @@ var score: int = 0:
     set(value):
         score = value
         score_changed.emit(score)
+```
 
-# player.gd — emit through autoload
+<v-click>
+
+Теперь **любой скрипт** может отправлять и слушать — без ссылок на ноды!
+
+```gdscript
+# player.gd — отправляем через autoload
 func die():
     GameManager.game_over.emit()
+```
 
-# ANY script can listen — no node references needed!
+</v-click>
+
+<!--
+Autoload объявляет сигналы и состояние. Сеттер автоматически отправляет сигнал при изменении. Любой скрипт может взаимодействовать через autoload.
+-->
+
+---
+
+# Подписка на сигналы Autoload
+
+```gdscript
 # ui.gd
 func _ready():
     GameManager.score_changed.connect(_on_score_changed)
@@ -497,15 +648,54 @@ func _on_game_over():
     $GameOverScreen.show()
 ```
 
+<div v-click class="mt-6 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+  💡 Этот паттерн вы будете использовать в 90% случаев. Любая нода может отправлять, любая может слушать — всё через autoload.
+</div>
+
 <!--
-This is the pattern you'll use 90% of the time. Global signals through autoloads. Any node can emit, any node can listen.
+UI просто подключается к сигналам autoload в _ready. Чисто, без жёсткой связи.
 -->
 
 ---
 
-# Real-World Example: Coin Pickup
+# Пример: SceneManager Autoload
 
-Let's put it all together:
+Плавные переходы между сценами с использованием обоих паттернов:
+
+```gdscript
+# scene_manager.gd (autoload)
+signal scene_changed(scene_name: String)
+
+func change_scene(path: String):
+    var tween = create_tween()
+    tween.tween_method(_fade, 0.0, 1.0, 0.3)   # затемнение
+    await tween.finished
+    get_tree().change_scene_to_file(path)
+    tween = create_tween()
+    tween.tween_method(_fade, 1.0, 0.0, 0.3)   # проявление
+    scene_changed.emit(path)
+```
+
+<v-click>
+
+```gdscript
+# В любом месте игры:
+SceneManager.change_scene("res://levels/level_2.tscn")
+```
+
+</v-click>
+
+<style>
+.slidev-code { font-size: 0.85em !important; line-height: 1.35 !important; }
+</style>
+
+<!--
+SceneManager — вероятно, самый частый autoload после GameManager. Инкапсулирует логику переходов, чтобы каждая смена сцены выглядела красиво.
+-->
+
+---
+
+# Полный пример: сбор монет
 
 <div class="grid grid-cols-2 gap-4">
 <div>
@@ -513,7 +703,6 @@ Let's put it all together:
 ```gdscript
 # game_manager.gd (autoload)
 signal coin_collected(total: int)
-
 var coins: int = 0
 
 func add_coin():
@@ -535,9 +724,7 @@ func _on_body_entered(body):
 ```gdscript
 # coin_counter_ui.gd
 func _ready():
-    GameManager.coin_collected.connect(
-        _update_display
-    )
+    GameManager.coin_collected.connect(_update_display)
     _update_display(GameManager.coins)
 
 func _update_display(total: int):
@@ -547,9 +734,7 @@ func _update_display(total: int):
 ```gdscript
 # achievement_manager.gd
 func _ready():
-    GameManager.coin_collected.connect(
-        _check_achievements
-    )
+    GameManager.coin_collected.connect(_check_achievements)
 
 func _check_achievements(total: int):
     if total >= 100:
@@ -559,126 +744,177 @@ func _check_achievements(total: int):
 </div>
 </div>
 
-<div v-click class="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-center">
-  🧩 Coin doesn't know about UI. UI doesn't know about achievements. Everything just works.
+<div v-click class="mt-2 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-center">
+  🧩 Монетка не знает про UI. UI не знает про достижения. Всё просто работает.
 </div>
 
+<style>
+.slidev-code { font-size: 0.8em !important; line-height: 1.3 !important; }
+</style>
+
 <!--
-Look how clean this is. Each piece does one thing. Adding new listeners doesn't require changing anything else.
+Посмотрите, как чисто. Каждая часть делает одно дело. Добавление новых слушателей не требует изменений в остальном коде.
 -->
 
 ---
 
-# ⚠️ Signal Best Practices
+# ⚠️ Лучшие практики Signals
 
 <v-clicks>
 
-- **Name signals as past tense events**: `health_changed`, `died`, `item_collected`
-- **Keep parameters minimal** — pass only what listeners need
-- **Disconnect when needed**: `signal.disconnect(callable)` to prevent leaks
-- **Use `Callable`** for lambdas: `signal.connect(func(): print("hi"))`
-- **One-shot connections**: `signal.connect(callback, CONNECT_ONE_SHOT)`
-- **Don't chain signals** excessively — it becomes hard to debug
+- **Называйте сигналы как прошедшие события**: `health_changed`, `died`, `item_collected`
+- **Минимум параметров** — передавайте только то, что нужно слушателям
+- **Отключайте при необходимости**: `signal.disconnect(callable)` чтобы избежать утечек
+- **Используйте `Callable`** для лямбд: `signal.connect(func(): print("hi"))`
+- **Одноразовые подключения**: `signal.connect(callback, CONNECT_ONE_SHOT)`
+- **Не стройте цепочки сигналов** — это сложно отлаживать
 
 </v-clicks>
 
 <div v-click class="mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
 
-### 🐛 Debugging tip
+### 🐛 Совет по отладке
 
 ```gdscript
-# Print when signal fires — great for debugging
-my_signal.connect(func(args): print("Signal fired: ", args))
+# Печатаем при срабатывании сигнала — отлично для дебага
+my_signal.connect(func(args): print("Сигнал сработал: ", args))
 ```
 
 </div>
 
 ---
+
+# Частые ошибки
+
+<div class="grid grid-cols-2 gap-4">
+<div v-click class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+
+### Спагетти из сигналов
+
+A → emit → B → emit → C → emit → A
+
+Циклические цепочки сигналов **невозможно отладить**. Держите поток однонаправленным.
+
+</div>
+<div v-click class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+
+### Забыли отключиться
+
+```gdscript
+# Нода удалена, а сигнал
+# всё ещё ссылается → ошибка!
+func _exit_tree():
+    GameManager.score_changed.disconnect(
+        _on_score_changed)
+```
+
+</div>
+<div v-click class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+
+### God Autoload
+
+Один autoload на 2000 строк, который делает всё. **Разделяйте** по ответственности!
+
+</div>
+<div v-click class="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+
+### Сигнал для связи 1-к-1
+
+Если слушает только **одна** нода — просто вызовите метод напрямую. Сигналы хороши при **нескольких** слушателях.
+
+</div>
+</div>
+
+<style>
+.slidev-code { font-size: 0.8em !important; line-height: 1.3 !important; }
+</style>
+
+---
 layout: center
 ---
 
-# Quick Comparison
+# Сравнение
 
-| Feature | Direct Call | Signal |
-|---------|------------|--------|
-| Coupling | Tight 🔗 | Loose 🔓 |
-| Emitter knows listener? | Yes | No |
-| Multiple listeners? | Manual | Automatic |
-| Easy to add new listeners? | Requires changes | Just connect |
-| Debugging | Easier to trace | Harder to trace |
-| Performance | Slightly faster | Slightly slower |
+| Свойство | Прямой вызов | Signal |
+|----------|-------------|--------|
+| Связанность | Жёсткая 🔗 | Слабая 🔓 |
+| Отправитель знает слушателя? | Да | Нет |
+| Несколько слушателей? | Вручную | Автоматически |
+| Легко добавить слушателя? | Нужны изменения | Просто connect |
+| Отладка | Проще отследить | Сложнее отследить |
+| Производительность | Чуть быстрее | Чуть медленнее |
 
 <div v-click class="mt-6 text-center text-xl">
-  <strong>Rule of thumb:</strong> Use signals when multiple systems need to react to the same event
+  <strong>Правило:</strong> используйте сигналы, когда несколько систем должны реагировать на одно событие
 </div>
 
 ---
 layout: center
 ---
 
-# Recap 🎯
+# Итоги 🎯
 
 <div class="grid grid-cols-2 gap-8 mt-8">
 <div v-click>
 
 ## Autoloads
 
-- Global singletons
-- Persist across scenes
-- Access by name: `GameManager.score`
-- Good for: game state, audio, saves, transitions
-- Set up: Project Settings → Autoload
+- Глобальные синглтоны
+- Переживают смену сцен
+- Доступ по имени: `GameManager.score`
+- Для: состояния игры, аудио, сохранений, переходов
+- Настройка: Project Settings → Autoload
 
 </div>
 <div v-click>
 
 ## Signals
 
-- Event-driven communication
-- Decoupled architecture
-- Define: `signal my_event`
-- Emit: `my_event.emit()`
-- Connect: `node.my_event.connect(func)`
+- Событийное общение
+- Развязанная архитектура
+- Объявление: `signal my_event`
+- Отправка: `my_event.emit()`
+- Подключение: `node.my_event.connect(func)`
 
 </div>
 </div>
 
 <div v-click class="mt-8 text-center text-xl">
-  <strong>Combined:</strong> Autoload signals = global event bus 🚌
+  <strong>Вместе:</strong> сигналы в autoload = глобальная шина событий 🚌
 </div>
 
 ---
 layout: center
 ---
 
-# Let's Code! 🎮
+# Давайте кодить! 🎮
 
 <div class="text-xl text-gray-400 mt-4">
-  Time for a hands-on exercise
+  Время для практики
 </div>
 
 <v-clicks class="mt-8 text-lg">
 
-1. Create a `GameManager` autoload with score + lives
-2. Add signals: `score_changed`, `life_lost`, `game_over`
-3. Build a simple scene that uses both patterns
-4. Bonus: Add an `AudioManager` autoload
+1. Создайте `GameManager` autoload с очками и жизнями
+2. Добавьте сигналы: `score_changed`, `life_lost`, `game_over`
+3. Соберите простую сцену, использующую оба паттерна
+4. Бонус: добавьте `AudioManager` autoload
 
 </v-clicks>
 
 <!--
-Let's spend the rest of the time coding together. Open Godot and follow along!
+Оставшееся время кодим вместе. Открывайте Godot и повторяйте!
 -->
 
 ---
 layout: center
 ---
 
-# Questions? 🤔
+# Вопросы? 🤔
 
 <div class="text-xl text-gray-400 mt-4">
 
-**Resources:**
+**Ресурсы:**
 
 - [Godot Docs: Singletons (Autoload)](https://docs.godotengine.org/en/stable/tutorials/scripting/singletons_autoload.html)
 - [Godot Docs: Signals](https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html)
@@ -687,5 +923,5 @@ layout: center
 </div>
 
 <div class="abs-br m-6 text-gray-500">
-  Made with Slidev ⚡
+  Сделано с Slidev ⚡
 </div>
