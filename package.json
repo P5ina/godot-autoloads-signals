@@ -2,9 +2,12 @@
 	"name": "godot-presentation",
 	"private": true,
 	"scripts": {
-		"dev": "slidev",
-		"build": "slidev build",
-		"export": "slidev export"
+		"dev:autoloads": "slidev godot-autoloads-signals.md",
+		"dev:gdscript": "slidev gdscript-advanced.md",
+		"build:autoloads": "slidev build godot-autoloads-signals.md",
+		"build:gdscript": "slidev build gdscript-advanced.md",
+		"export:autoloads": "slidev export godot-autoloads-signals.md",
+		"export:gdscript": "slidev export gdscript-advanced.md"
 	},
 	"devDependencies": {
 		"@slidev/cli": "^52.11.5",
