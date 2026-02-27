@@ -1,6 +1,6 @@
 ---
 theme: default
-title: "GDScript: Продвинутый синтаксис"
+title: "Лекция 2: GDScript — Продвинутый синтаксис"
 info: |
   Углублённое изучение возможностей GDScript:
   аннотации, сеттеры, лямбды и многое другое.
@@ -12,7 +12,7 @@ drawings:
   persist: false
 ---
 
-# GDScript
+# Лекция 2: GDScript
 ## Продвинутый синтаксис
 
 <div class="pt-12">
@@ -432,10 +432,7 @@ signal died
 
 var health: int = max_health:
     set(value):
-        set_health(value)
-
-func set_health(h: float):
-    health = 10.0
+        health = value
 
 var health_percent: float:
     get:
@@ -641,7 +638,7 @@ func attack() -> void:
     # вызываем родительский метод
     super.attack()
     $AnimationPlayer.play("slash")
-    _deal_damage_in_area()
+    _deal_damage_in_area(damage)
 ```
 
 <div v-click class="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">

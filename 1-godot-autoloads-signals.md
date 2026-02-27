@@ -1,6 +1,6 @@
 ---
 theme: default
-title: "Погружение в Godot: Autoloads и Signals"
+title: "Лекция 1: Погружение в Godot — Autoloads и Signals"
 info: |
   Практическое руководство по двум ключевым паттернам Godot:
   Autoloads (синглтоны) и Signals (паттерн наблюдатель).
@@ -12,7 +12,7 @@ drawings:
   persist: false
 ---
 
-# Погружение в Godot
+# Лекция 1: Погружение в Godot
 ## Autoloads и Signals
 
 <div class="pt-12">

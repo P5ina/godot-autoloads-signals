@@ -2,12 +2,15 @@
 	"name": "godot-presentation",
 	"private": true,
 	"scripts": {
-		"dev:autoloads": "slidev godot-autoloads-signals.md",
-		"dev:gdscript": "slidev gdscript-advanced.md",
-		"build:autoloads": "slidev build godot-autoloads-signals.md",
-		"build:gdscript": "slidev build gdscript-advanced.md",
-		"export:autoloads": "slidev export godot-autoloads-signals.md",
-		"export:gdscript": "slidev export gdscript-advanced.md"
+		"dev:autoloads": "slidev 1-godot-autoloads-signals.md",
+		"dev:gdscript": "slidev 2-gdscript-advanced.md",
+		"build:autoloads": "slidev build 1-godot-autoloads-signals.md",
+		"build:gdscript": "slidev build 2-gdscript-advanced.md",
+		"export:autoloads": "slidev export 1-godot-autoloads-signals.md",
+		"export:gdscript": "slidev export 2-gdscript-advanced.md",
+		"dev:rust": "slidev 3-rust-lifetimes.md",
+		"build:rust": "slidev build 3-rust-lifetimes.md",
+		"export:rust": "slidev export 3-rust-lifetimes.md"
 	},
 	"devDependencies": {
 		"@slidev/cli": "^52.11.5",
